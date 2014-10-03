@@ -1,5 +1,20 @@
 import subprocess
-import my_utils as mu
+
+# if storage is almost full or force is set to true, rsync
+def check_and_sync_storage(force):
+	threshold = 90 # corresponds to over 720 GB used on i2.xlarge
+	results = subprocess.check_output('df -kh .', shell=True)
+	used = results.split('\n')[1].split()[4].strip().rstrip('%') # grab fifth element of 2nd line and toss all but the pct
+	if used > threshold or force:
+		pass
+		'''
+		rsync it to da2
+		'''
+
+def call_and_time(cmd):
+	start = time.time()
+	subprocess.call(cmd, shell=True)
+	return time.time() - start
 
 # just your average declarations
 f1 = open('RepoSize.csv')
@@ -7,17 +22,15 @@ f2 = open('divided')
 sizes = f1.readlines()
 divided = f2.readlines()
 our_group = 6 # team 6 rulez!!1!!eleven!!!
-
-disk_used = 0
 git_time = 0
 hg_time = 0
 
-mu.get_disk_capacity()
-
+# some input error checking
 if len(sizes) != len(divided):
 	print 'the two input files don\'t have the same number of lines!'
 	exit(1)
 
+# loop through the repo list, cloning each of our repos
 for i in range(len(sizes)):
 	# grab the size, group, version control system, and repo name info from the files
 	size = int(sizes[i].split(';')[0].strip())
@@ -25,13 +38,26 @@ for i in range(len(sizes)):
 	group = int(group)
 	team,name = repo.split('/')
 
+	# check the current amount of storage used, rsync if too much
+	check_and_sync_storage(False)
+
 	# if the repo is our responsibility, let's grab it
 	if group == our_group:
-		if vcs == 'git':
-			cmd = 'git clone --mirror https://bitbucket.org/' + team + '/' + name
-		elif vcs == 'hg':
-			cmd = 'hg clone -U https://bitbucket.org/' + team + '/' + name
-		#subprocess.call(cmd, shell=True)
+		if vcs == 'hg':
+			cmd = 'hg clone -U https://bitbucket.org/{0}/{1} {0}_{1}'.format(team, name)
+			elapsed = call_and_time(cmd)
+			hg_time += elapsed
+		elif vcs == 'git':
+			cmd = 'git clone --mirror https://bitbucket.org/{0}/{1} {0}_{1}'.format(team, name)
+			elapsed = call_and_time(cmd)
+			git_time += elapsed
+
+# sync last pulls to storage
+check_and_sync_storage(True)
+
+# output timing results
+print 'hg time: ' + str(hg_time)
+print 'git time: ' + str(git_time)
 
 # clean-up
 f1.close()
