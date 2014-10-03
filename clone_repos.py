@@ -11,6 +11,7 @@ def check_and_sync_storage(force):
 		rsync it to da2
 		'''
 
+# call the given command and return the time it took to finish
 def call_and_time(cmd):
 	start = time.time()
 	subprocess.call(cmd, shell=True)
@@ -44,11 +45,11 @@ for i in range(len(sizes)):
 	# if the repo is our responsibility, let's grab it
 	if group == our_group:
 		if vcs == 'hg':
-			cmd = 'hg clone -U https://bitbucket.org/{0}/{1} {0}_{1}'.format(team, name)
+			cmd = 'hg clone -U https://bitbucket.org/{0}/{1} ~/repos/{0}_{1}'.format(team, name)
 			elapsed = call_and_time(cmd)
 			hg_time += elapsed
 		elif vcs == 'git':
-			cmd = 'git clone --mirror https://bitbucket.org/{0}/{1} {0}_{1}'.format(team, name)
+			cmd = 'git clone --mirror https://bitbucket.org/{0}/{1} ~/repos/{0}_{1}'.format(team, name)
 			elapsed = call_and_time(cmd)
 			git_time += elapsed
 
