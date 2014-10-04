@@ -1,17 +1,18 @@
 import subprocess
 import time
+import sys
 
 # if storage is almost full or force is set to true, rsync
 def check_and_sync_storage(force):
 	threshold = 90 # corresponds to over 720 GB used on i2.xlarge
-	try: results = subprocess.check_output('df -kh .', shell=True)
+	try: results = subprocess.check_output('sudo df -kh /export', shell=True)
 	except Exception: return
-	used = int(results.split('\n')[1].split()[4].strip().rstrip('%')) # grab fifth element of 2nd line and toss all but the pct
+	used = int(results.split('\n')[1].split()[4].strip().rstrip('%')) # grab fifth element of 2nd line and toss pct symbol
 	if used > threshold or force:
 		try:
-			subprocess.call('rsync -ae \'ssh -p2200\' ~/repos jduggan1@da2.eecs.utk.edu:', shell=True)
-			subprocess.call('rm -r ~/repos', shell=True)
-			subprocess.call('mkdir ~/repos', shell=True)
+			subprocess.call('sudo rsync -ae \'ssh -p2200\' {0}/repos jduggan1@da2.eecs.utk.edu:repos'.format(dirname), shell=True)
+			subprocess.call('sudo rm -r {0}/repos'.format(dirname), shell=True)
+			subprocess.call('sudo mkdir {0}/repos'.format(dirname), shell=True)
 		except Exception:
 			return
 
@@ -23,38 +24,39 @@ def call_and_time(cmd):
 	return time.time() - start
 
 # just your average declarations
-f1 = open('RepoSize.csv')
-f2 = open('divided')
-sizes = f1.readlines()
-divided = f2.readlines()
 our_group = 6 # team 6 rulez!!1!!eleven!!!
 git_time = 0
 hg_time = 0
 
-# some input error checking
-if len(sizes) != len(divided):
-	print 'the two input files don\'t have the same number of lines!'
-	exit(1)
+dirname = sys.argv[1]
+f1 = open(dirname + '/list.csv', 'r')
+output = open(dirname + '/output.txt', 'w')
+lines = f1.readlines()
 
+start_time = time.time()
 # loop through the repo list, cloning each of our repos
-for i in range(len(sizes)):
-	print i
+for line in lines:
 	# grab the size, group, version control system, and repo name info from the files
-	size = int(sizes[i].split(';')[0].strip())
-	group,vcs,repo = map(str.strip, divided[i].split(';'))
-	group = int(group)
-	team,name = repo.split('/')
+	tokens = map(str.strip, line.split(','))
+	size = int(tokens[0])
+	group = int(tokens[1])
+	vcs = tokens[2]
+	team = tokens[3]
+	name = tokens[4]
 
+	# check if the repo is our responsibility
 	if group == our_group:
 		# check the current amount of storage used, rsync if too much
 		check_and_sync_storage(False)
 
+		# clone the repo
 		if vcs == 'hg':
-			cmd = 'hg clone -U https://bitbucket.org/{0}/{1} ~/repos/{0}_{1}'.format(team, name)
+			cmd = 'sudo hg clone -U https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + '/repos/{0}_{1}'.format(team, name)
+			print cmd
 			elapsed = call_and_time(cmd)
 			hg_time += elapsed
 		elif vcs == 'git':
-			cmd = 'git clone --mirror https://bitbucket.org/{0}/{1} ~/repos/{0}_{1}'.format(team, name)
+			cmd = 'sudo git clone --mirror https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + '/repos/{0}_{1}'.format(team, name)
 			elapsed = call_and_time(cmd)
 			git_time += elapsed
 
@@ -62,9 +64,10 @@ for i in range(len(sizes)):
 check_and_sync_storage(True)
 
 # output timing results
-print 'hg time: ' + str(hg_time)
-print 'git time: ' + str(git_time)
+output.write('wall time: ' + str(time.time() - start_time) + '\n')
+output.write('hg time: ' + str(hg_time) + '\n')
+output.write('git time: ' + str(git_time) + '\n')
 
 # clean-up
 f1.close()
-f2.close()
+output.close()

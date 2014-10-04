@@ -1,0 +1,1 @@
+for i in {0..3}; do for j in {0..1}; do nohup sudo python clone_repos.py /export/repos/proc${i}_core${j} & done; done;
