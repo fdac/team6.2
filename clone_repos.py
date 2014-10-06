@@ -4,15 +4,15 @@ import sys
 
 # if storage is almost full or force is set to true, rsync
 def check_and_sync_storage(force):
-	threshold = 90 # corresponds to over 720 GB used on i2.xlarge
+	threshold = 90 # corresponds to ~700 GB used on i2.xlarge
 	try: results = subprocess.check_output('sudo df -kh /export', shell=True)
 	except Exception: return
 	used = int(results.split('\n')[1].split()[4].strip().rstrip('%')) # grab fifth element of 2nd line and toss pct symbol
 	if used > threshold or force:
 		try:
-			subprocess.call('sudo rsync -ae \'ssh -p2200\' {0}/repos jduggan1@da2.eecs.utk.edu:repos'.format(dirname), shell=True)
-			subprocess.call('sudo rm -r {0}/repos'.format(dirname), shell=True)
-			subprocess.call('sudo mkdir {0}/repos'.format(dirname), shell=True)
+			subprocess.call('rsync -ae "ssh -p 2200" /export/repos jduggan1@da2.eecs.utk.edu:', shell=True)
+			subprocess.call('sudo rm -r /export/repos', shell=True)
+			subprocess.call('sudo mkdir /export/repos', shell=True)
 		except Exception:
 			return
 
@@ -28,9 +28,8 @@ our_group = 6 # team 6 rulez!!1!!eleven!!!
 git_time = 0
 hg_time = 0
 
-dirname = sys.argv[1]
-f1 = open(dirname + '/list.csv', 'r')
-output = open(dirname + '/output.txt', 'w')
+f1 = open('todo.csv', 'r')
+output = open('output.txt', 'w')
 lines = f1.readlines()
 
 start_time = time.time()
@@ -51,12 +50,11 @@ for line in lines:
 
 		# clone the repo
 		if vcs == 'hg':
-			cmd = 'sudo hg clone -U https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + '/repos/{0}_{1}'.format(team, name)
-			print cmd
+			cmd = 'sudo hg clone -U https://bitbucket.org/{0}/{1} '.format(team, name) + '/export/repos/{0}_{1}'.format(team, name)
 			elapsed = call_and_time(cmd)
 			hg_time += elapsed
 		elif vcs == 'git':
-			cmd = 'sudo git clone --mirror https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + '/repos/{0}_{1}'.format(team, name)
+			cmd = 'sudo git clone --mirror https://bitbucket.org/{0}/{1} '.format(team, name) + '/export/repos/{0}_{1}'.format(team, name)
 			elapsed = call_and_time(cmd)
 			git_time += elapsed
 
