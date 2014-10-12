@@ -8,11 +8,12 @@ sizes = f1.readlines()
 divided = f2.readlines()
 our_group = 6
 proc = 0
-core = 0
+outs = []
 
-output = open('todo.csv', 'w')
+for i in range(4):
+	outs.append(open('/export/repos/' + str(i) + '/todo.csv', 'w'))
 
-# loop through the repo list, cloning each of our repos
+# loop through the repo list, grabbing each of our repos
 for i in range(len(sizes)):
 	# grab the size, group, version control system, and repo name info from the files
 	size = int(sizes[i].split(';')[0].strip())
@@ -22,9 +23,9 @@ for i in range(len(sizes)):
 
 	# check if the repo is our responsibility
 	if group == our_group:
-		output.write('{0},{1},{2},{3},{4}\n'.format(str(size),str(group),vcs,team,name))
+		outs[proc].write('{0},{1},{2},{3}\n'.format(str(size),vcs,team,name))
+		proc = (proc + 1) % 4
 
 # clean-up
 f1.close()
 f2.close()
-output.close()

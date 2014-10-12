@@ -10,9 +10,9 @@ def check_and_sync_storage(force):
 	used = int(results.split('\n')[1].split()[4].strip().rstrip('%')) # grab fifth element of 2nd line and toss pct symbol
 	if used > threshold or force:
 		try:
-			subprocess.call('rsync -ae "ssh -p 2200" /export/repos jduggan1@da2.eecs.utk.edu:', shell=True)
-			subprocess.call('sudo rm -r /export/repos', shell=True)
-			subprocess.call('sudo mkdir /export/repos', shell=True)
+			subprocess.call('rsync -ae "ssh -p 2200" ' + dirname + ' jduggan1@da2.eecs.utk.edu:repos', shell=True)
+			subprocess.call('sudo rm -r ' + dirname + 'repos', shell=True)
+			subprocess.call('sudo mkdir ' + dirname + 'repos', shell=True)
 		except Exception:
 			return
 
@@ -23,14 +23,19 @@ def call_and_time(cmd):
 	except Exception: pass
 	return time.time() - start
 
+def write_timing(fout, prefix):
+	fout.write(prefix + ' wall time: ' + str(time.time() - start_time) + '\n')
+	fout.write(prefix + ' hg time: ' + str(hg_time) + '\n')
+	fout.write(prefix + ' git time: ' + str(git_time) + '\n')
+
 # just your average declarations
-our_group = 6 # team 6 rulez!!1!!eleven!!!
 git_time = 0
 hg_time = 0
-
-f1 = open('todo.csv', 'r')
-output = open('output.txt', 'w')
-lines = f1.readlines()
+dirname = sys.argv[1]
+proc = sys.argv[1][-2]
+todo = open(dirname + 'todo.csv', 'r')
+output = open('output_' + proc + '.txt', 'w')
+lines = todo.readlines()
 
 start_time = time.time()
 # loop through the repo list, cloning each of our repos
@@ -38,34 +43,31 @@ for line in lines:
 	# grab the size, group, version control system, and repo name info from the files
 	tokens = map(str.strip, line.split(','))
 	size = int(tokens[0])
-	group = int(tokens[1])
-	vcs = tokens[2]
-	team = tokens[3]
-	name = tokens[4]
+	vcs = tokens[1]
+	team = tokens[2]
+	name = tokens[3]
 
-	# check if the repo is our responsibility
-	if group == our_group:
-		# check the current amount of storage used, rsync if too much
-		check_and_sync_storage(False)
+	# check the current amount of storage used, rsync if too much
+	check_and_sync_storage(False)
 
-		# clone the repo
-		if vcs == 'hg':
-			cmd = 'sudo hg clone -U https://bitbucket.org/{0}/{1} '.format(team, name) + '/export/repos/{0}_{1}'.format(team, name)
-			elapsed = call_and_time(cmd)
-			hg_time += elapsed
-		elif vcs == 'git':
-			cmd = 'sudo git clone --mirror https://bitbucket.org/{0}/{1} '.format(team, name) + '/export/repos/{0}_{1}'.format(team, name)
-			elapsed = call_and_time(cmd)
-			git_time += elapsed
+	# clone the repo
+	if vcs == 'hg':
+		cmd = 'sudo hg clone -U https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + 'repos/{0}_{1}'.format(team, name)
+		elapsed = call_and_time(cmd)
+		hg_time += elapsed
+		write_timing(output, 'checkpoint')
+	elif vcs == 'git':
+		cmd = 'sudo git clone --mirror https://bitbucket.org/{0}/{1} '.format(team, name) + dirname + 'repos/{0}_{1}'.format(team, name)
+		elapsed = call_and_time(cmd)
+		git_time += elapsed
+		write_timing(output, 'checkpoint')
 
 # sync last pulls to storage
 check_and_sync_storage(True)
 
-# output timing results
-output.write('wall time: ' + str(time.time() - start_time) + '\n')
-output.write('hg time: ' + str(hg_time) + '\n')
-output.write('git time: ' + str(git_time) + '\n')
+# output final timing results
+write_timing(output, 'final')
 
 # clean-up
-f1.close()
+todo.close()
 output.close()
