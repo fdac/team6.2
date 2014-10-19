@@ -7,7 +7,7 @@ f2 = open('divided', 'r')
 sizes = f1.readlines()
 divided = f2.readlines()
 our_group = 6
-proc = 0
+process = 0
 outs = []
 
 for i in range(4):
@@ -23,9 +23,10 @@ for i in range(len(sizes)):
 
 	# check if the repo is our responsibility
 	if group == our_group:
-		outs[proc].write('{0},{1},{2},{3}\n'.format(str(size),vcs,team,name))
-		proc = (proc + 1) % 4
+		outs[process].write('{0},{1},{2},{3}\n'.format(str(size),vcs,team,name))
+		process = (process + 1) % 4
 
 # clean-up
 f1.close()
 f2.close()
+fout.close()

@@ -19,8 +19,11 @@ def check_and_sync_storage(force):
 # call the given command and return the time it took to finish
 def call_and_time(cmd):
 	start = time.time()
-	try: subprocess.call(cmd, shell=True)
-	except Exception: pass
+	try:
+		runner = subprocess.Popen(cmd, shell=True)
+		runner.communicate()
+	except Exception:
+		pass
 	return time.time() - start
 
 def write_timing(fout, prefix):
@@ -32,9 +35,9 @@ def write_timing(fout, prefix):
 git_time = 0
 hg_time = 0
 dirname = sys.argv[1]
-proc = sys.argv[1][-2]
+process = dirname[-2]
 todo = open(dirname + 'todo.csv', 'r')
-output = open('output_' + proc + '.txt', 'w')
+output = open('timing_' + process + '.txt', 'w')
 lines = todo.readlines()
 
 start_time = time.time()
