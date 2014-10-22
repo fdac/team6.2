@@ -1,9 +1,11 @@
 import subprocess
 import time
+import sys
 
 # just your average declarations
+which = sys.argv[1]
 fin = open('divided', 'r')
-fout = open('pullrequests.todo', 'w')
+fout = open(which + '.todo', 'w')
 divided = fin.readlines()
 our_group = 6
 process = 0
