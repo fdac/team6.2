@@ -25,9 +25,13 @@ coll1 = db [collName]
 for n in f:    
   n = n .rstrip ()
   r = coll .find_one ({ "full_name" : n },  { "links" : 1 })
+  if r == None: continue
   id = r ['_id']
   url = r ['links'][collName]['href']
-  url1 = url + "/?pagelen=100"
+  if collName == 'pullrequests':
+    url1 = url + "/?pagelen=50"
+  else:
+    url1 = url + "/?pagelen=100"
   v = []
   size = 0
   while True:
